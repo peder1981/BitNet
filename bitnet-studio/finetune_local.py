@@ -9,6 +9,9 @@ import sys
 import time
 from pathlib import Path
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 import torch
 from datasets import Dataset
 from peft import LoraConfig, get_peft_model
@@ -23,12 +26,12 @@ from transformers import (
 # ========== CONFIG ==========
 MODEL = "tiiuae/Falcon3-3B-Instruct"  # Começar com 3B (10B pode não caber em RAM)
 # MODEL = "tiiuae/Falcon3-10B-Instruct"  # Descomentar se RAM > 32GB
-DATASET = "data/ptbr_tools_train_large.jsonl"
-OUTPUT = "adapters/f3b-ptbr-tools-local"
-MAX_SEQ_LEN = 64  # Curto para economizar RAM
-LORA_R = 8
-LORA_ALPHA = 16
-STEPS = 150
+DATASET = "data/ptbr_tools_train_v3.jsonl"
+OUTPUT = "adapters/f3b-ptbr-tools-v3"
+MAX_SEQ_LEN = 128  # Aumentado para caber 4 mensagens
+LORA_R = 16
+LORA_ALPHA = 32
+STEPS = 250
 BATCH_SIZE = 1
 GRAD_ACCUM = 2
 

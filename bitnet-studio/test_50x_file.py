@@ -25,7 +25,7 @@ def log(msg):
     print(msg, flush=True)
 
 log(f"{'='*60}")
-log("TESTE 50x — Adapter v1 (150 steps, 162 exemplos) + parse_tool_call robusto")
+log("TESTE 50x — Adapter v3 (250 steps, 362 exemplos, 50 negativos) + parse_tool_call robusto")
 log(f"{'='*60}")
 
 log("[1/2] Carregando modelo...")
