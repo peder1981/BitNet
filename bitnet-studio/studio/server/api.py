@@ -30,13 +30,16 @@ from studio.server.inference import LlamaServerBackend
 from studio.server.mcp_bridge import McpRegistry
 from studio.server.tool_engine import (
     build_system_prompt,
+    build_retry_prompt,
     format_tool_result,
     parse_tool_call,
+    should_use_tool,
 )
 
 log = logging.getLogger("studio.api")
 
 MAX_TOOL_ITERATIONS = 8
+MAX_TOOL_RETRIES = 1  # retry com prompt de correcao para tool call malformada
 WEBUI_DIR = Path(__file__).resolve().parents[1] / "webui"
 
 # ── estado global (single-process por design) ───────────────────────────────
@@ -109,7 +112,28 @@ def chat_completions(req: ChatRequest) -> dict[str, Any]:
             messages, temperature=req.temperature, max_tokens=req.max_tokens
         )
         tc = parse_tool_call(answer, tools) if tools else None
+
+        # Retry: se modelo gerou tag mas JSON malformado, tenta corrigir
+        if tc is None and tools and "<" in answer and "tool" in answer.lower():
+            retry_prompt = build_retry_prompt(answer, tools)
+            retry_messages = messages + [{"role": "assistant", "content": answer},
+                                         {"role": "user", "content": retry_prompt}]
+            retry_answer = backend.chat(
+                retry_messages, temperature=max(0.1, req.temperature - 0.2),
+                max_tokens=req.max_tokens,
+            )
+            tc = parse_tool_call(retry_answer, tools)
+            if tc:
+                answer = retry_answer
+                log.info("tool call recuperada via retry: %s", tc.name)
+
         if tc is None:
+            # Pre-filtro heuristico: se should_use_tool sugere tool mas modelo nao gerou,
+            # registra para analise (nao forca tool call, apenas log)
+            if tools and messages:
+                suggested = should_use_tool(messages[-1].get("content", ""), tools)
+                if suggested:
+                    log.warning("modelo nao gerou tool call mas heuristica sugere: %s", suggested)
             break
         log.info("tool call: %s(%s)", tc.name, tc.arguments)
         result = mcps.call(tc.name, tc.arguments)

@@ -48,3 +48,11 @@ build_tests/
 logs/Testing/
 Testing/
 models/Llama-2-7B-GGUF/
+FEEDBACK_GLM52.txt
+AGENTS.md
+bitnet-studio/finetune_scope.py
+bitnet-studio/scripts/eval_scope.py
+bitnet-studio/scripts/generate_scope_dataset.py
+bitnet-studio/data/scope_rejected.jsonl
+bitnet-studio/data/scope_test.jsonl
+bitnet-studio/data/scope_train.jsonl
