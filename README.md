@@ -10,8 +10,9 @@
 [![Fine-Tuned](https://img.shields.io/badge/fine--tuned-Falcon3--3B--PTBR--tools-blue.svg)]()
 
 > **Inferência 1.58-bit local-first, sem CUDA, sem cloud, sem telemetria.**
-> Agora com **fine-tuning local CPU-only** para tool-calling em português
-> via MCP, **parser robusto de JSON truncado**, e **memória cross-agent**.
+> Fine-tuning local CPU-only para tool-calling em português via MCP,
+> **parser v2 com normalização de nomes, multi-tool, heurística de confiança e retry automático**,
+> e **memória cross-agent** via mem0.
 >
 > **Fork de [`microsoft/BitNet`](https://github.com/microsoft/BitNet)** +
 > **BitNet Studio** (server Python) com adapter QLoRA Falcon3-3B-Instruct
@@ -40,24 +41,50 @@ persistente entre sessões.
 # 1. Clone e setup
 git clone --recursive https://github.com/peder1981/BitNet.git && cd BitNet
 conda create -n bitnet python=3.10 -y && conda activate bitnet
-pip install -r bitnet-studio/pyproject.toml  # ou requirements.txt
+pip install -r bitnet-studio/pyproject.toml
 
-# 2. Fine-tune local CPU (Falcon3-3B, 150 steps, ~34 min)
+# 2. Fine-tune local CPU (Falcon3-3B, 250 steps, ~4h)
 cd bitnet-studio
-python finetune_local.py  # gera adapter em adapters/f3b-ptbr-tools-local/
+python finetune_local.py  # gera adapter em adapters/f3b-ptbr-tools-v3/
 
-# 3. Testar tool-calling (72 testes exaustivos, ~3h)
-python test_50x_file.py  # valida extração de JSON truncado/multiline
+# 3. Testar tool-calling (72 testes exaustivos, ~2h)
+python test_50x_file.py  # valida extração de JSON com parser v2
 
-# 4. Inferência C++ air-gapped (BitNet-2B, sem rede)
-cd ..
-python run_inference.py \
-  -m models/BitNet-b1.58-2B-4T/ggml-model-i2_s.gguf \
-  -p "Resuma este prontuário:" -n 200 -t 4
+# 4. Testar parser v2 (26 testes unitários, <1s)
+python test_parser_v2.py  # normalização, multi-tool, heurística, retry
 ```
 
 ---
-## Stack atual (2026-06-12)
+## Evolução do adapter (v1 → v3)
+
+| Versão | Dataset | Exemplos | Steps | Pass rate | Parser | Status |
+|--------|---------|----------|-------|-----------|--------|--------|
+| v1 | `ptbr_tools_train_large.jsonl` | 162 | 150 | 38.9% | v1 (6 fallbacks) | ✅ Commit |
+| v2 | `ptbr_tools_train_v2.jsonl` | 220 | 180 | 31.9% | v1 | ❌ Regressão |
+| **v3** | `ptbr_tools_train_v3.jsonl` | **362** | **250** | **48.6%** | **v2** | ✅ Melhor |
+| v3.1 | `ptbr_tools_train_v3_1.jsonl` | 502 | 300 | ~8% | v2 | ❌ Regressão |
+
+### O que mudou em v3
+
+**Dataset (362 exemplos):**
+- 162 exemplos originais + 150 positivos extra + 50 negativos (4 mensagens)
+- Foco em tools com baixo acerto no v1: `mem0_search`, `mem0_delete`, `consultar_dicionario_direto`
+
+**Parser v2 (tool_engine.py):**
+- **Normalização de nomes**: `protheus-rag-mem0-stats` → `protheus-rag__mem0_stats`
+- **Fallback 2b**: tag com nome mas sem JSON braces
+- **`parse_all_tool_calls`**: extrai múltiplas tool calls com deduplicação
+- **`should_use_tool`**: heurística de confiança com word boundaries
+- **`build_retry_prompt`**: prompt de correção para tool calls malformadas
+- **26/26 testes unitários passando (100%)**
+
+**Configuração:**
+- `max_tokens`: 180 (evita truncamento)
+- LoRA r=16, alpha=32, `MAX_SEQ_LEN=128`
+- 250 steps, ~4h em CPU (Ryzen 9, 12 threads)
+
+---
+## Stack atual (2026-06-25)
 
 ### BitNet C++ (núcleo de pesquisa)
 
@@ -74,19 +101,25 @@ Engine de inferência 1.58-bit com 5 níveis algébricos demonstrando
 
 Ver `docs/theory/` para fundamentação matemática completa.
 
-### BitNet Studio (novo — server Python + fine-tuning)
+### BitNet Studio (server Python + fine-tuning)
 
 ```
 bitnet-studio/
 ├── studio/
 │   └── server/
-│       ├── tool_engine.py      ← Parser robusto de tool_call (JSON truncado/multiline)
+│       ├── tool_engine.py      ← Parser v2: 6 fallbacks + normalização + multi-tool + heurística
 │       ├── mcp_bridge.py       ← Bridge MCP para 10 tools protheus-rag
+│       ├── api.py              ← Loop agentic com retry e pre-filtro heurístico
 │       └── inference.py        ← Geração com adapter QLoRA
 ├── finetune_local.py           ← Fine-tune 100% CPU (Falcon3-3B, QLoRA)
 ├── test_50x_file.py            ← Teste exaustivo 72 rodadas (6×12 perguntas)
+├── test_parser_v2.py           ← Teste unitário do parser v2 (26 testes)
+├── data/
+│   ├── gen_dataset_v3.py       ← Gerador dataset v3 (362 exemplos)
+│   └── gen_dataset_v3_1.py     ← Gerador dataset v3.1 (502 exemplos)
 └── adapters/
-    └── f3b-ptbr-tools-local/   ← Adapter 150 steps (~13s/step, 34 min total)
+    ├── f3b-ptbr-tools-local/   ← Adapter v1 (150 steps)
+    └── f3b-ptbr-tools-v3/      ← Adapter v3 (250 steps) — melhor resultado
 ```
 
 **Ferramentas disponíveis (MCP — protheus-rag):**
@@ -104,13 +137,16 @@ bitnet-studio/
 | `mem0_stats` | Estatísticas da base | "Quantas memórias temos?" |
 | `mem0_delete` | Remove memória | "Apague memória sobre teste" |
 
-**Parser de tool_call (robustez):**
+**Parser v2 de tool_call (robustez):**
 
-- Extrai JSON de `<tool_call>...</tool_call>` completo
-- Captura `<tool_call>` truncado (sem `</tool_call>`)
-- Suporta JSON multiline com balanced braces
-- Fallback para regex de nome isolado em texto corrido
-- 6 níveis de fallback progressivos
+- 6 níveis de fallback progressivos (bloco completo, truncado, code fence, JSON puro, regex)
+- Normalização de nomes: dashes para double underscores
+- Fallback 2b: tag com nome mas sem JSON braces
+- parse_all_tool_calls: extrai múltiplas tool calls com deduplicação
+- should_use_tool: heurística de confiança com word boundaries (10 tools)
+- build_retry_prompt: prompt de correção para tool calls malformadas
+- JSON multiline com balanced braces
+- 26/26 testes unitários passando (100%)
 
 ### Protocolo mem0 (cross-agent)
 
@@ -127,40 +163,50 @@ Configurado em `AGENTS.md` e `CLAUDE.md`.
 
 ```bash
 cd bitnet-studio
-# Dataset: 162 exemplos de tool-calling em PT-BR
-# Formato: <|user|>pergunta<|assistant|><tool_call>{"name":..., "arguments":...}
+# Dataset v3: 362 exemplos de tool-calling em PT-BR
+# Formato: mensagens com role=user/assistant, tool calls em  tags
 ```
 
 ### Treinamento
 
 ```bash
 # Falcon3-3B-Instruct + QLoRA (r=16, alpha=32, target_modules=all linear)
-# 150 steps, batch_size=2, gradient_accumulation=4
-# ~13s/step = ~34 min total em CPU (Ryzen 9, 12 cores)
+# 250 steps, batch_size=1, gradient_accumulation=2
+# ~59s/step = ~4h total em CPU (Ryzen 9, 12 cores)
 python finetune_local.py
 ```
 
-### Resultados do adapter
+### Resultados do adapter v3
 
-| Métrica | Valor |
+| Metrica | Valor |
 |---------|-------|
 | Base model | `tiiuae/Falcon3-3B-Instruct` |
-| Adapter path | `adapters/f3b-ptbr-tools-local/` |
-| Steps | 150 |
-| Tempo total | ~34 min |
-| Tempo/step | ~13s |
+| Adapter path | `adapters/f3b-ptbr-tools-v3/` |
+| Steps | 250 |
+| Dataset | 362 exemplos (v3) |
+| Tempo total | ~247 min (~4h) |
+| Tempo/step | ~59s |
+| Loss final | 0.098 |
+| Pass rate | 48.6% (35/72) |
 | Hardware | CPU-only (12 threads) |
 
-### Validação exaustiva
+### Validacao exaustiva
 
 ```bash
-# 72 testes = 12 perguntas × 6 iterações
-# Verifica: extração correta, JSON truncado, multiline, sem </tool_call>
+# 72 testes = 12 perguntas x 6 iteracoes
+# Verifica: extracao correta, JSON truncado, multiline, normalizacao
 python test_50x_file.py
 ```
 
-Resultado esperado (com parser robusto): **>80% acerto** na extração de
-tool calls, mesmo com respostas truncadas pelo modelo.
+Resultado: **48.6% acerto** (35/72 testes). Meta: 60%+ com parser v2.
+
+### Teste do parser v2 (unitario)
+
+```bash
+python test_parser_v2.py  # 26 testes, <1s
+```
+
+Resultado: **26/26 testes passando (100%)**.
 
 ---
 ## Uso
@@ -186,14 +232,14 @@ from studio.server.tool_engine import parse_tool_call
 
 # Carregar base + adapter
 base = AutoModelForCausalLM.from_pretrained("tiiuae/Falcon3-3B-Instruct")
-model = PeftModel.from_pretrained(base, "adapters/f3b-ptbr-tools-local")
+model = PeftModel.from_pretrained(base, "adapters/f3b-ptbr-tools-v3")
 
 # Gerar resposta
 prompt = "<|user|>\nComo funciona MaFisCalc?\n<|assistant|>\n"
-output = model.generate(**tokenizer(prompt, return_tensors="pt"), max_new_tokens=180)
+output = model.generate(**tokenizer(prompt, return_tensors="pt"), max_new_tokens=256)
 response = tokenizer.decode(output[0])
 
-# Extrair tool call (6 fallbacks, tolerante a truncamento)
+# Extrair tool call (parser v2: 6 fallbacks + normalizacao + multi-tool)
 tc = parse_tool_call(response, TOOLS)
 if tc:
     print(f"Tool: {tc.name}, Args: {tc.arguments}")
@@ -218,10 +264,10 @@ property-based tests com 100-1000 iters cada.
 ```bash
 cd bitnet-studio
 
-# Teste rápido (12 testes, ~10 min)
-python test_3x.py
+# Teste do parser v2 (26 testes unitários, <1s)
+python test_parser_v2.py
 
-# Teste exaustivo (72 testes, ~3h) — salva progresso em arquivo
+# Teste exaustivo (72 testes, ~2h) — salva progresso em arquivo
 python test_50x_file.py
 # Resultado: test_50x_progress.log + test_50x_results.json
 ```
@@ -279,11 +325,14 @@ utils/                     ← Benchmarks L1-L5
 ```
 bitnet-studio/
 ├── studio/server/
-│   ├── tool_engine.py     ← Parser 6 fallbacks de tool_call
+│   ├── tool_engine.py     ← Parser v2: 6 fallbacks + normalização + multi-tool + heurística
 │   ├── mcp_bridge.py      ← Integração MCP (protheus-rag)
+│   ├── api.py             ← Loop agentic com retry e pre-filtro heurístico
 │   └── inference.py       ← Geração com adapter
 ├── finetune_local.py      ← Fine-tune QLoRA CPU
-├── test_*.py              ← Testes de extração e acurácia
+├── test_50x_file.py       ← Teste exaustivo 72 rodadas
+├── test_parser_v2.py      ← Teste unitário parser v2 (26 testes)
+├── data/                  ← Datasets e geradores
 └── adapters/              ← Checkpoints QLoRA
 ```
 
@@ -301,6 +350,6 @@ MIT — ver [`LICENSE`](LICENSE).
 
 ---
 
-*v3.0 — README reescrito em 2026-06-12.*
-*v2 → v3: adicionado BitNet Studio, Falcon3 adapter, tool-calling PT-BR,
-parser robusto de JSON truncado, protocolo mem0 cross-agent.*
+*v4.0 — README atualizado em 2026-06-25.*
+*v3 → v4: adapter v3 (48.6%), parser v2 (normalização, multi-tool, heurística, retry),
+loop agentic integrado, dataset v3 (362 exemplos), 26 testes unitários do parser.*
