@@ -110,7 +110,7 @@ results = []
 for iteration in range(ITERATIONS):
     log(f"--- Iteração {iteration + 1}/{ITERATIONS} ---")
     for q_text, expected_tool in QUESTIONS:
-        prompt = f"<|user|>\n{q_text}\n<|assistant|>\n"
+        prompt = f"<|im_start|>user\n{q_text}\n<|im_end|>\n<|im_start|>assistant\n"
         t0 = time.time()
         response = generate(prompt)
         elapsed = time.time() - t0
