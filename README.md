@@ -138,7 +138,8 @@ bitnet-studio/
 │   └── gen_dataset_v3_1.py     ← Gerador dataset v3.1 (502 exemplos)
 └── adapters/
     ├── f3b-ptbr-tools-local/   ← Adapter v1 (150 steps)
-    └── f3b-ptbr-tools-v3/      ← Adapter v3 (250 steps) — melhor resultado
+    ├── f3b-ptbr-tools-v3/      ← Adapter v3 (250 steps, 52.8%)
+    └── f3b-ptbr-tools-v4/      ← Adapter v4 (350 steps, 91.7%) — atual
 ```
 
 **Ferramentas disponíveis (MCP — protheus-rag):**
@@ -253,7 +254,7 @@ from studio.server.tool_engine import parse_tool_call
 
 # Carregar base + adapter
 base = AutoModelForCausalLM.from_pretrained("tiiuae/Falcon3-3B-Instruct")
-model = PeftModel.from_pretrained(base, "adapters/f3b-ptbr-tools-v3")
+model = PeftModel.from_pretrained(base, "adapters/f3b-ptbr-tools-v4")
 
 # Gerar resposta
 prompt = "<|user|>\nComo funciona MaFisCalc?\n<|assistant|>\n"
