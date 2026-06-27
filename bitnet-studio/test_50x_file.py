@@ -79,8 +79,8 @@ def generate(prompt, max_tokens=128):
             eos_token_id=tok.eos_token_id,
         )
     text = tok.decode(outputs[0], skip_special_tokens=False)
-    if "<|assistant|>" in text:
-        text = text.split("<|assistant|>")[-1].strip()
+    if "<|im_start|>assistant" in text:
+        text = text.split("<|im_start|>assistant")[-1].strip()
     return text
 
 QUESTIONS = [
