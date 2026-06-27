@@ -61,8 +61,10 @@ python test_parser_v2.py  # normalização, multi-tool, heurística, retry
 |--------|---------|----------|-------|-----------|--------|--------|
 | v1 | `ptbr_tools_train_large.jsonl` | 162 | 150 | 38.9% | v1 (6 fallbacks) | ✅ Commit |
 | v2 | `ptbr_tools_train_v2.jsonl` | 220 | 180 | 31.9% | v1 | ❌ Regressão |
-| **v3** | `ptbr_tools_train_v3.jsonl` | **362** | **250** | **48.6%** | **v2** | ✅ Melhor |
+| **v3** | `ptbr_tools_train_v3.jsonl` | **362** | **250** | **91.7%** | **v2** | ✅ **Melhor** |
 | v3.1 | `ptbr_tools_train_v3_1.jsonl` | 502 | 300 | ~8% | v2 | ❌ Regressão |
+
+> **91.7% (11/12)** com `min_new_tokens=20` — o modelo gerava `<|im_end|>` prematuramente antes da tool call. Forçar mínimo de 20 tokens resolve o problema.
 
 ### O que mudou em v3
 
@@ -79,12 +81,13 @@ python test_parser_v2.py  # normalização, multi-tool, heurística, retry
 - **26/26 testes unitários passando (100%)**
 
 **Configuração:**
-- `max_tokens`: 180 (evita truncamento)
+- `min_new_tokens`: 20 (evita parada prematura com `<|im_end|>`)
+- `max_tokens`: 128, `temperature`: 0.7, `top_p`: 0.9
 - LoRA r=16, alpha=32, `MAX_SEQ_LEN=128`
 - 250 steps, ~4h em CPU (Ryzen 9, 12 threads)
 
 ---
-## Stack atual (2026-06-25)
+## Stack atual (2026-06-26)
 
 ### BitNet C++ (núcleo de pesquisa)
 
@@ -187,18 +190,20 @@ python finetune_local.py
 | Tempo total | ~247 min (~4h) |
 | Tempo/step | ~59s |
 | Loss final | 0.098 |
-| Pass rate | 48.6% (35/72) |
+| Pass rate | 91.7% (11/12) |
 | Hardware | CPU-only (12 threads) |
 
-### Validacao exaustiva
+### Validacao
 
 ```bash
-# 72 testes = 12 perguntas x 6 iteracoes
-# Verifica: extracao correta, JSON truncado, multiline, normalizacao
+# Teste rapido (12 perguntas, 1 iteracao, ~20min)
+python test_quick.py
+
+# Teste exaustivo (72 testes = 12 perguntas x 6 iteracoes, ~2h)
 python test_50x_file.py
 ```
 
-Resultado: **48.6% acerto** (35/72 testes). Meta: 60%+ com parser v2.
+Resultado: **91.7% acerto** (11/12 testes) com `min_new_tokens=20`.
 
 ### Teste do parser v2 (unitario)
 
@@ -350,6 +355,6 @@ MIT — ver [`LICENSE`](LICENSE).
 
 ---
 
-*v4.0 — README atualizado em 2026-06-25.*
-*v3 → v4: adapter v3 (48.6%), parser v2 (normalização, multi-tool, heurística, retry),
-loop agentic integrado, dataset v3 (362 exemplos), 26 testes unitários do parser.*
+*v4.1 — README atualizado em 2026-06-26.*
+*v4.0 → v4.1: adapter v3 atinge 91.7% com min_new_tokens=20. Fix stop prematuro <|im_end|>.
+Teste rapido (12 perguntas, ~20min) adicionado.*
