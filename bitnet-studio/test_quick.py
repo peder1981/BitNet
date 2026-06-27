@@ -64,7 +64,7 @@ def generate(prompt, max_tokens=128):
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_tokens,
-            min_new_tokens=10,
+            min_new_tokens=25,
             do_sample=False,
             pad_token_id=tok.pad_token_id,
             eos_token_id=tok.eos_token_id,
