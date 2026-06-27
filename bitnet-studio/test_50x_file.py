@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from studio.server.tool_engine import parse_tool_call
 
 BASE = "tiiuae/Falcon3-3B-Instruct"
-ADAPTER = "adapters/f3b-ptbr-tools-v3_1"
+ADAPTER = "adapters/f3b-ptbr-tools-v3"
 OUTPUT_FILE = "test_50x_results.json"
 LOG_FILE = "test_50x_progress.log"
 
@@ -25,7 +25,7 @@ def log(msg):
     print(msg, flush=True)
 
 log(f"{'='*60}")
-log("TESTE 50x — Adapter v3.1 (300 steps, 502 exemplos, parser com normalizacao) + parse_tool_call robusto")
+log("TESTE 72x — Adapter v3 (temp=0.7, top_p=0.9, min_new_tokens=20, max_tokens=128) — config final")
 log(f"{'='*60}")
 
 log("[1/2] Carregando modelo...")
@@ -67,14 +67,16 @@ TOOLS = [
     MockTool("protheus-rag__mem0_delete"),
 ]
 
-def generate(prompt, max_tokens=256):
+def generate(prompt, max_tokens=128):
     inputs = tok(prompt, return_tensors="pt")
     with torch.no_grad():
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_tokens,
-            temperature=0.3,
+            min_new_tokens=20,
+            temperature=0.7,
             do_sample=True,
+            top_p=0.9,
             pad_token_id=tok.pad_token_id,
             eos_token_id=tok.eos_token_id,
         )

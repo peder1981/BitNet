@@ -26,8 +26,8 @@ from transformers import (
 # ========== CONFIG ==========
 MODEL = "tiiuae/Falcon3-3B-Instruct"  # Começar com 3B (10B pode não caber em RAM)
 # MODEL = "tiiuae/Falcon3-10B-Instruct"  # Descomentar se RAM > 32GB
-DATASET = "data/ptbr_tools_train_v3_1.jsonl"
-OUTPUT = "adapters/f3b-ptbr-tools-v3_1"
+DATASET = "data/ptbr_tools_train_v3.jsonl"
+OUTPUT = "adapters/f3b-ptbr-tools-v3"
 MAX_SEQ_LEN = 128  # Aumentado para caber 4 mensagens
 LORA_R = 16
 LORA_ALPHA = 32
