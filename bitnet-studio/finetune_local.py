@@ -5,6 +5,7 @@ Roda 100% em CPU, sem GPU, sem Colab, sem nuvem.
 Uso: nohup python3 finetune_local.py > /tmp/finetune_local.log 2>&1 &
 """
 import json
+import random
 import sys
 import time
 from pathlib import Path
@@ -26,12 +27,12 @@ from transformers import (
 # ========== CONFIG ==========
 MODEL = "tiiuae/Falcon3-3B-Instruct"  # Começar com 3B (10B pode não caber em RAM)
 # MODEL = "tiiuae/Falcon3-10B-Instruct"  # Descomentar se RAM > 32GB
-DATASET = "data/ptbr_tools_train_v3.jsonl"
-OUTPUT = "adapters/f3b-ptbr-tools-v3"
+DATASET = "data/ptbr_tools_train_v4.jsonl"
+OUTPUT = "adapters/f3b-ptbr-tools-v4"
 MAX_SEQ_LEN = 128  # Aumentado para caber 4 mensagens
 LORA_R = 16
 LORA_ALPHA = 32
-STEPS = 300
+STEPS = 350
 BATCH_SIZE = 1
 GRAD_ACCUM = 2
 
@@ -46,8 +47,11 @@ print(f"{'='*60}\n")
 
 # Forçar CPU
 torch.set_num_threads(4)
+torch.manual_seed(42)
+random.seed(42)
 print(f"PyTorch threads: {torch.get_num_threads()}")
 print(f"CUDA: {torch.cuda.is_available()}")
+print(f"Seed: 42 (torch + random)")
 
 # ========== TOKENIZER ==========
 print("\n[1/5] Carregando tokenizer...")
