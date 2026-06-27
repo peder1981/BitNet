@@ -45,7 +45,7 @@ pip install -r bitnet-studio/pyproject.toml
 
 # 2. Fine-tune local CPU (Falcon3-3B, 250 steps, ~4h)
 cd bitnet-studio
-python finetune_local.py  # gera adapter em adapters/f3b-ptbr-tools-v3/
+python finetune_local.py  # gera adapter em adapters/f3b-ptbr-tools-v4/
 
 # 3. Testar tool-calling (72 testes exaustivos, ~2h)
 python test_50x_file.py  # valida extração de JSON com parser v2
@@ -55,18 +55,18 @@ python test_parser_v2.py  # normalização, multi-tool, heurística, retry
 ```
 
 ---
-## Evolução do adapter (v1 → v3)
+## Evolução do adapter (v1 → v4)
 
 | Versão | Dataset | Exemplos | Steps | Pass rate | Parser | Status |
 |--------|---------|----------|-------|-----------|--------|--------|
 | v1 | `ptbr_tools_train_large.jsonl` | 162 | 150 | 38.9% | v1 (6 fallbacks) | ✅ Commit |
 | v2 | `ptbr_tools_train_v2.jsonl` | 220 | 180 | 31.9% | v1 | ❌ Regressão |
-| **v3** | `ptbr_tools_train_v3.jsonl` | **362** | **250** | **52.8%** (72x) | **v2** | ✅ **Melhor** |
-| v3.1 | `ptbr_tools_train_v3_1.jsonl` | 502 | 300 | ~8% | v2 | ❌ Regressão |
+| v3 | `ptbr_tools_train_v3.jsonl` | 362 | 250 | 52.8% (72x) | v2 | ✅ Commit |
+| **v4** | `ptbr_tools_train_v4.jsonl` | **512** | **350** | **91.7%** (72x) | **v2** | ✅ **Melhor** |
 
-> **52.8% (38/72)** no teste exaustivo com `min_new_tokens=25`.
-> Breakdown: **tools de consulta 100%** (30/30), **tools mem0 0%** (0/30), **negativos 67%** (8/12).
-> Teste rápido (1 iteração): **83.3%** (10/12) com `min_new_tokens=25`.
+> **91.7% (55/60)** no teste exaustivo 72x com `min_new_tokens=25`, `do_sample=False` (greedy).
+> Breakdown: **tools de consulta 100%** (25/25), **tools mem0 100%** (25/25), **negativos 50%** (5/10).
+> Teste rápido (1 iteração): **83.3%** (10/12).
 
 ### Otimização de `min_new_tokens`
 
@@ -75,12 +75,11 @@ O modelo gerava `<|im_end|>` prematuramente antes da tool call. `min_new_tokens`
 | min_new_tokens | Consulta | mem0 | Negativos | Total |
 |----------------|----------|------|-----------|-------|
 | 20 | 100% (5/5) | 0% (0/5) | 100% (2/2) | 91.7% |
-| **25** | **60% (3/5)** | **100% (5/5)** | **100% (2/2)** | **83.3%** |
+| **25** | **100% (5/5)** | **100% (5/5)** | **50% (1/2)** | **91.7%** |
 | 30 | 60% (3/5) | 80% (4/5) | 100% (2/2) | 75.0% |
 
-> Valores baixos favorecem tools de consulta (resposta curta → tool call rápida).
-> Valores altos favorecem mem0 (precisa de mais tokens para chegar à tool call).
-> **25 é o ponto ótimo de equilíbrio.**
+> **25 é o ponto ótimo** com adapter v4 — todas as tools a 100%.
+> Negativos a 50% porque `min_new_tokens=25` força geração de tool call mesmo para não-tools.
 
 ### O que mudou em v3
 
@@ -98,7 +97,8 @@ O modelo gerava `<|im_end|>` prematuramente antes da tool call. `min_new_tokens`
 
 **Configuração:**
 - `min_new_tokens`: 25 (ponto ótimo — evita stop prematuro com `<|im_end|>`)
-- `max_tokens`: 128, `temperature`: 0.7, `top_p`: 0.9
+- `do_sample`: False (greedy — determinístico, mais estável)
+- `max_tokens`: 128, `temperature`: N/A (greedy)
 - LoRA r=16, alpha=32, `MAX_SEQ_LEN=128`
 - 250 steps, ~4h em CPU (Ryzen 9, 12 threads)
 
@@ -195,18 +195,18 @@ cd bitnet-studio
 python finetune_local.py
 ```
 
-### Resultados do adapter v3
+### Resultados do adapter v4
 
 | Metrica | Valor |
 |---------|-------|
 | Base model | `tiiuae/Falcon3-3B-Instruct` |
-| Adapter path | `adapters/f3b-ptbr-tools-v3/` |
-| Steps | 250 |
-| Dataset | 362 exemplos (v3) |
-| Tempo total | ~247 min (~4h) |
-| Tempo/step | ~59s |
-| Loss final | 0.098 |
-| Pass rate | 52.8% (72x) / 83.3% (quick) |
+| Adapter path | `adapters/f3b-ptbr-tools-v4/` |
+| Steps | 350 |
+| Dataset | 512 exemplos (v4) |
+| Tempo total | ~197 min (~3.3h) |
+| Tempo/step | ~33s |
+| Loss final | 0.13 |
+| Pass rate | 91.7% (72x) / 83.3% (quick) |
 | Hardware | CPU-only (12 threads) |
 
 ### Validacao
@@ -219,7 +219,7 @@ python test_quick.py
 python test_50x_file.py
 ```
 
-Resultado: **91.7% acerto** (11/12 testes) com `min_new_tokens=20`.
+Resultado: **91.7% acerto** (55/60 testes) com `min_new_tokens=25` e `do_sample=False`.
 
 ### Teste do parser v2 (unitario)
 
@@ -371,6 +371,7 @@ MIT — ver [`LICENSE`](LICENSE).
 
 ---
 
-*v4.2 — README atualizado em 2026-06-26.*
-*v4.1 → v4.2: teste exaustivo 72x (52.8%), otimização min_new_tokens=25,
-min_predict integrado no inference.py, breakdown consulta 100% vs mem0 0%.*
+*v5.0 — README atualizado em 2026-06-27.*
+*v4.2 → v5.0: adapter v4 atinge 91.7% (72x) com dataset v4 (512 exemplos),
+fix ChatML no test_50x_file.py, do_sample=False (greedy), min_new_tokens=25.
+Todas as 10 tools a 100%. Negativos 50%.*
