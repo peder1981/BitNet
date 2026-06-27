@@ -174,7 +174,8 @@ class LlamaServerBackend:
 
     # ── inference ───────────────────────────────────────────────────────────
     def chat(self, messages: list[dict], *, temperature: float = 0.7,
-             max_tokens: int = 1024, stop: list[str] | None = None) -> str:
+             max_tokens: int = 1024, min_tokens: int = 25,
+             stop: list[str] | None = None) -> str:
         if not self.model or not self.alive:
             raise RuntimeError("nenhum modelo carregado")
         template = TEMPLATES.get(self.model.chat_template, _chatml)
@@ -186,6 +187,7 @@ class LlamaServerBackend:
                 "prompt": prompt,
                 "temperature": temperature,
                 "n_predict": max_tokens,
+                "min_predict": min_tokens,
                 "stop": stops,
                 "cache_prompt": True,
             },
