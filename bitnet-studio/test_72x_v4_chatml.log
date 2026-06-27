@@ -1,0 +1,198 @@
+nohup: ignorando entrada
+============================================================
+TESTE 72x — Adapter v4 (512 exemplos, 350 steps, min_new_tokens=25, greedy) — config otima
+============================================================
+[1/2] Carregando modelo...
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/201 [00:00<?, ?it/s]Loading weights:   0%|          | 1/201 [00:02<07:17,  2.19s/it]Loading weights:   1%|          | 2/201 [00:03<05:01,  1.52s/it]Loading weights:  38%|███▊      | 76/201 [00:03<00:03, 36.04it/s]Loading weights:  44%|████▍     | 88/201 [00:03<00:03, 37.42it/s]Loading weights:  49%|████▉     | 98/201 [00:03<00:02, 38.98it/s]Loading weights:  53%|█████▎    | 106/201 [00:04<00:02, 36.97it/s]Loading weights:  56%|█████▌    | 112/201 [00:04<00:03, 26.48it/s]Loading weights:  60%|██████    | 121/201 [00:05<00:02, 29.10it/s]Loading weights:  65%|██████▍   | 130/201 [00:05<00:02, 31.54it/s]Loading weights:  69%|██████▉   | 139/201 [00:05<00:01, 31.36it/s]Loading weights:  74%|███████▎  | 148/201 [00:05<00:01, 31.61it/s]Loading weights:  76%|███████▌  | 152/201 [00:05<00:01, 32.28it/s]Loading weights:  78%|███████▊  | 157/201 [00:06<00:01, 27.32it/s]Loading weights:  83%|████████▎ | 166/201 [00:06<00:01, 26.40it/s]Loading weights:  87%|████████▋ | 175/201 [00:06<00:00, 27.74it/s]Loading weights:  92%|█████████▏| 184/201 [00:07<00:00, 24.67it/s]Loading weights:  96%|█████████▌| 193/201 [00:08<00:00, 16.50it/s]Loading weights:  98%|█████████▊| 196/201 [00:08<00:00, 15.87it/s]Loading weights: 100%|██████████| 201/201 [00:08<00:00, 23.56it/s]
+/home/peder/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:180: UserWarning: CUDA initialization: CUDA unknown error - this may be due to an incorrectly set up environment, e.g. changing env variable CUDA_VISIBLE_DEVICES after program start. Setting the available devices to be zero. (Triggered internally at /pytorch/c10/cuda/CUDAFunctions.cpp:119.)
+  return torch._C._cuda_getDeviceCount() > 0
+Modelo carregado!
+
+[2/2] Executando 72 testes (12 perguntas × 6 iterações)
+
+--- Iteração 1/6 ---
+  PASS | Como funciona a função MaFisCalc?   | exp=protheus-rag__consultar_base_direta      | got=protheus-rag__consultar_base_direta      | 97.7s
+  PASS | Quais campos tem a tabela SA1?      | exp=protheus-rag__consultar_dicionario_direto | got=protheus-rag__consultar_dicionario_direto | 93.9s
+  PASS | Como funciona o faturamento no Prot | exp=protheus-rag__consultar_base_interna     | got=protheus-rag__consultar_base_interna     | 95.6s
+  FAIL | Como usar o skill reversa-scout?    | exp=protheus-rag__buscar_reversa_direto      | got=None                                     | 93.6s
+    Response: 
+  PASS | Como criar um REST endpoint em TLPP | exp=protheus-rag__consultar_reversa_rag      | got=protheus-rag__consultar_reversa_rag      | 93.4s
+  PASS | O que sabemos sobre o cliente João  | exp=protheus-rag__mem0_search                | got=protheus-rag__mem0_search                | 96.0s
+  FAIL | Anote que o cliente prefere contato | exp=protheus-rag__mem0_add                   | got=None                                     | 93.2s
+    Response: O processo foi executado com sucesso.
+  FAIL | Liste todas as memórias salvas      | exp=protheus-rag__mem0_list                  | got=None                                     | 93.8s
+    Response: <tool_call>
+{"name": "protheus-rag
+  FAIL | Quantas memórias temos na base?     | exp=protheus-rag__mem0_stats                 | got=None                                     | 93.3s
+    Response: O
+  FAIL | Apague a memória sobre o teste      | exp=protheus-rag__mem0_delete                | got=None                                     | 94.1s
+    Response: <|assistant>
+<tool_call>
+{"name":
+  PASS | Olá, como vai?                      | exp=None                                     | got=None                                     | 94.0s
+  FAIL | Quanto é 2 + 2?                     | exp=None                                     | got=protheus-rag__consultar_base_interna     | 92.6s
+    Response: <|im_start|>user
+Quanto é 2 + 2?
+<|im_end|>
+<|im_start|>assistant
+2 + 2 é igual a 4.
+<|im_end|>
+<tool_call>
+{"name": "protheus-rag__consultar_base_int
+--- Iteração 2/6 ---
+  PASS | Como funciona a função MaFisCalc?   | exp=protheus-rag__consultar_base_direta      | got=protheus-rag__consultar_base_direta      | 102.8s
+  PASS | Quais campos tem a tabela SA1?      | exp=protheus-rag__consultar_dicionario_direto | got=protheus-rag__consultar_dicionario_direto | 104.7s
+  PASS | Como funciona o faturamento no Prot | exp=protheus-rag__consultar_base_interna     | got=protheus-rag__consultar_base_interna     | 116.8s
+  FAIL | Como usar o skill reversa-scout?    | exp=protheus-rag__buscar_reversa_direto      | got=None                                     | 110.9s
+    Response: 
+  PASS | Como criar um REST endpoint em TLPP | exp=protheus-rag__consultar_reversa_rag      | got=protheus-rag__consultar_reversa_rag      | 104.1s
+  PASS | O que sabemos sobre o cliente João  | exp=protheus-rag__mem0_search                | got=protheus-rag__mem0_search                | 106.5s
+  FAIL | Anote que o cliente prefere contato | exp=protheus-rag__mem0_add                   | got=None                                     | 104.3s
+    Response: O processo foi executado com sucesso.
+  FAIL | Liste todas as memórias salvas      | exp=protheus-rag__mem0_list                  | got=None                                     | 106.9s
+    Response: <tool_call>
+{"name": "protheus-rag
+  FAIL | Quantas memórias temos na base?     | exp=protheus-rag__mem0_stats                 | got=None                                     | 106.3s
+    Response: O
+  FAIL | Apague a memória sobre o teste      | exp=protheus-rag__mem0_delete                | got=None                                     | 103.5s
+    Response: <|assistant>
+<tool_call>
+{"name":
+  PASS | Olá, como vai?                      | exp=None                                     | got=None                                     | 102.3s
+  FAIL | Quanto é 2 + 2?                     | exp=None                                     | got=protheus-rag__consultar_base_interna     | 104.1s
+    Response: <|im_start|>user
+Quanto é 2 + 2?
+<|im_end|>
+<|im_start|>assistant
+2 + 2 é igual a 4.
+<|im_end|>
+<tool_call>
+{"name": "protheus-rag__consultar_base_int
+--- Iteração 3/6 ---
+  PASS | Como funciona a função MaFisCalc?   | exp=protheus-rag__consultar_base_direta      | got=protheus-rag__consultar_base_direta      | 106.7s
+  PASS | Quais campos tem a tabela SA1?      | exp=protheus-rag__consultar_dicionario_direto | got=protheus-rag__consultar_dicionario_direto | 108.2s
+  PASS | Como funciona o faturamento no Prot | exp=protheus-rag__consultar_base_interna     | got=protheus-rag__consultar_base_interna     | 103.8s
+  FAIL | Como usar o skill reversa-scout?    | exp=protheus-rag__buscar_reversa_direto      | got=None                                     | 105.0s
+    Response: 
+  PASS | Como criar um REST endpoint em TLPP | exp=protheus-rag__consultar_reversa_rag      | got=protheus-rag__consultar_reversa_rag      | 105.6s
+  PASS | O que sabemos sobre o cliente João  | exp=protheus-rag__mem0_search                | got=protheus-rag__mem0_search                | 104.0s
+  FAIL | Anote que o cliente prefere contato | exp=protheus-rag__mem0_add                   | got=None                                     | 103.3s
+    Response: O processo foi executado com sucesso.
+  FAIL | Liste todas as memórias salvas      | exp=protheus-rag__mem0_list                  | got=None                                     | 109.4s
+    Response: <tool_call>
+{"name": "protheus-rag
+  FAIL | Quantas memórias temos na base?     | exp=protheus-rag__mem0_stats                 | got=None                                     | 106.4s
+    Response: O
+  FAIL | Apague a memória sobre o teste      | exp=protheus-rag__mem0_delete                | got=None                                     | 103.9s
+    Response: <|assistant>
+<tool_call>
+{"name":
+  PASS | Olá, como vai?                      | exp=None                                     | got=None                                     | 106.9s
+  FAIL | Quanto é 2 + 2?                     | exp=None                                     | got=protheus-rag__consultar_base_interna     | 103.8s
+    Response: <|im_start|>user
+Quanto é 2 + 2?
+<|im_end|>
+<|im_start|>assistant
+2 + 2 é igual a 4.
+<|im_end|>
+<tool_call>
+{"name": "protheus-rag__consultar_base_int
+--- Iteração 4/6 ---
+  PASS | Como funciona a função MaFisCalc?   | exp=protheus-rag__consultar_base_direta      | got=protheus-rag__consultar_base_direta      | 104.5s
+  PASS | Quais campos tem a tabela SA1?      | exp=protheus-rag__consultar_dicionario_direto | got=protheus-rag__consultar_dicionario_direto | 102.3s
+  PASS | Como funciona o faturamento no Prot | exp=protheus-rag__consultar_base_interna     | got=protheus-rag__consultar_base_interna     | 104.4s
+  FAIL | Como usar o skill reversa-scout?    | exp=protheus-rag__buscar_reversa_direto      | got=None                                     | 103.4s
+    Response: 
+  PASS | Como criar um REST endpoint em TLPP | exp=protheus-rag__consultar_reversa_rag      | got=protheus-rag__consultar_reversa_rag      | 103.2s
+  PASS | O que sabemos sobre o cliente João  | exp=protheus-rag__mem0_search                | got=protheus-rag__mem0_search                | 104.8s
+  FAIL | Anote que o cliente prefere contato | exp=protheus-rag__mem0_add                   | got=None                                     | 103.5s
+    Response: O processo foi executado com sucesso.
+  FAIL | Liste todas as memórias salvas      | exp=protheus-rag__mem0_list                  | got=None                                     | 106.7s
+    Response: <tool_call>
+{"name": "protheus-rag
+  FAIL | Quantas memórias temos na base?     | exp=protheus-rag__mem0_stats                 | got=None                                     | 108.3s
+    Response: O
+  FAIL | Apague a memória sobre o teste      | exp=protheus-rag__mem0_delete                | got=None                                     | 109.8s
+    Response: <|assistant>
+<tool_call>
+{"name":
+  PASS | Olá, como vai?                      | exp=None                                     | got=None                                     | 110.9s
+  FAIL | Quanto é 2 + 2?                     | exp=None                                     | got=protheus-rag__consultar_base_interna     | 107.9s
+    Response: <|im_start|>user
+Quanto é 2 + 2?
+<|im_end|>
+<|im_start|>assistant
+2 + 2 é igual a 4.
+<|im_end|>
+<tool_call>
+{"name": "protheus-rag__consultar_base_int
+--- Iteração 5/6 ---
+  PASS | Como funciona a função MaFisCalc?   | exp=protheus-rag__consultar_base_direta      | got=protheus-rag__consultar_base_direta      | 111.8s
+  PASS | Quais campos tem a tabela SA1?      | exp=protheus-rag__consultar_dicionario_direto | got=protheus-rag__consultar_dicionario_direto | 114.2s
+  PASS | Como funciona o faturamento no Prot | exp=protheus-rag__consultar_base_interna     | got=protheus-rag__consultar_base_interna     | 124.0s
+  FAIL | Como usar o skill reversa-scout?    | exp=protheus-rag__buscar_reversa_direto      | got=None                                     | 122.5s
+    Response: 
+  PASS | Como criar um REST endpoint em TLPP | exp=protheus-rag__consultar_reversa_rag      | got=protheus-rag__consultar_reversa_rag      | 116.7s
+  PASS | O que sabemos sobre o cliente João  | exp=protheus-rag__mem0_search                | got=protheus-rag__mem0_search                | 108.2s
+  FAIL | Anote que o cliente prefere contato | exp=protheus-rag__mem0_add                   | got=None                                     | 108.1s
+    Response: O processo foi executado com sucesso.
+  FAIL | Liste todas as memórias salvas      | exp=protheus-rag__mem0_list                  | got=None                                     | 106.4s
+    Response: <tool_call>
+{"name": "protheus-rag
+  FAIL | Quantas memórias temos na base?     | exp=protheus-rag__mem0_stats                 | got=None                                     | 107.4s
+    Response: O
+  FAIL | Apague a memória sobre o teste      | exp=protheus-rag__mem0_delete                | got=None                                     | 99.0s
+    Response: <|assistant>
+<tool_call>
+{"name":
+  PASS | Olá, como vai?                      | exp=None                                     | got=None                                     | 98.5s
+  FAIL | Quanto é 2 + 2?                     | exp=None                                     | got=protheus-rag__consultar_base_interna     | 94.6s
+    Response: <|im_start|>user
+Quanto é 2 + 2?
+<|im_end|>
+<|im_start|>assistant
+2 + 2 é igual a 4.
+<|im_end|>
+<tool_call>
+{"name": "protheus-rag__consultar_base_int
+--- Iteração 6/6 ---
+  PASS | Como funciona a função MaFisCalc?   | exp=protheus-rag__consultar_base_direta      | got=protheus-rag__consultar_base_direta      | 94.1s
+  PASS | Quais campos tem a tabela SA1?      | exp=protheus-rag__consultar_dicionario_direto | got=protheus-rag__consultar_dicionario_direto | 91.9s
+  PASS | Como funciona o faturamento no Prot | exp=protheus-rag__consultar_base_interna     | got=protheus-rag__consultar_base_interna     | 94.0s
+  FAIL | Como usar o skill reversa-scout?    | exp=protheus-rag__buscar_reversa_direto      | got=None                                     | 93.4s
+    Response: 
+  PASS | Como criar um REST endpoint em TLPP | exp=protheus-rag__consultar_reversa_rag      | got=protheus-rag__consultar_reversa_rag      | 97.5s
+  PASS | O que sabemos sobre o cliente João  | exp=protheus-rag__mem0_search                | got=protheus-rag__mem0_search                | 107.7s
+  FAIL | Anote que o cliente prefere contato | exp=protheus-rag__mem0_add                   | got=None                                     | 115.4s
+    Response: O processo foi executado com sucesso.
+  FAIL | Liste todas as memórias salvas      | exp=protheus-rag__mem0_list                  | got=None                                     | 109.1s
+    Response: <tool_call>
+{"name": "protheus-rag
+  FAIL | Quantas memórias temos na base?     | exp=protheus-rag__mem0_stats                 | got=None                                     | 115.0s
+    Response: O
+  FAIL | Apague a memória sobre o teste      | exp=protheus-rag__mem0_delete                | got=None                                     | 119.8s
+    Response: <|assistant>
+<tool_call>
+{"name":
+  PASS | Olá, como vai?                      | exp=None                                     | got=None                                     | 276.5s
+  FAIL | Quanto é 2 + 2?                     | exp=None                                     | got=protheus-rag__consultar_base_interna     | 178.2s
+    Response: <|im_start|>user
+Quanto é 2 + 2?
+<|im_end|>
+<|im_start|>assistant
+2 + 2 é igual a 4.
+<|im_end|>
+<tool_call>
+{"name": "protheus-rag__consultar_base_int
+
+============================================================
+RESULTADO FINAL
+============================================================
+Total: 72
+Passaram: 36
+Falharam: 36
+Taxa de acerto: 50.0%
+============================================================
+
+Resultados salvos em: test_50x_results.json
