@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from studio.server.tool_engine import parse_tool_call
 
 BASE = "tiiuae/Falcon3-3B-Instruct"
-ADAPTER = "adapters/f3b-ptbr-tools-v3"
+ADAPTER = "adapters/f3b-ptbr-tools-v4"
 OUTPUT_FILE = "test_50x_results.json"
 LOG_FILE = "test_50x_progress.log"
 
@@ -25,7 +25,7 @@ def log(msg):
     print(msg, flush=True)
 
 log(f"{'='*60}")
-log("TESTE 72x — Adapter v3 (temp=0.7, top_p=0.9, min_new_tokens=20, max_tokens=128) — config final")
+log("TESTE 72x — Adapter v4 (512 exemplos, 350 steps, min_new_tokens=10, greedy) — todas tools")
 log(f"{'='*60}")
 
 log("[1/2] Carregando modelo...")
@@ -73,10 +73,8 @@ def generate(prompt, max_tokens=128):
         outputs = model.generate(
             **inputs,
             max_new_tokens=max_tokens,
-            min_new_tokens=25,
-            temperature=0.7,
-            do_sample=True,
-            top_p=0.9,
+            min_new_tokens=10,
+            do_sample=False,
             pad_token_id=tok.pad_token_id,
             eos_token_id=tok.eos_token_id,
         )
