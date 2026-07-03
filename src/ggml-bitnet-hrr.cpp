@@ -495,11 +495,7 @@ int hrr_cleanup_iter(float *out, const float *noisy,
             hrr_unbind(work, M_working, k_inv, d, tmp);
             idx = nearest(work);
             if (iter > 0 && idx == prev_idx) break;
-            if (iter == 0) {
-                memcpy(out, codebook[idx], d * sizeof(float));
-            } else {
-                for (int i = 0; i < d; i++) out[i] += codebook[idx][i];
-            }
+            memcpy(out, codebook[idx], d * sizeof(float));
             prev_idx = idx;
             /* subtract this codebook entry's trace from M_working */
             hrr_bind(binding, query_key, codebook[idx], d, tmp);

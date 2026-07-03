@@ -40,8 +40,8 @@
  * of the result, pick the diagonal. Cost: O(n² log n) — done ONCE at load.
  *
  * Error bound (for random W ~ Uniform{-1,0,+1}^{n×n}):
- *   E[||W - H·D*·H||_F²] / ||W||_F² ≈ 1 - 1/n   → 0 as n→∞
- *   [Proof: random matrices concentrate around their WHT projection]
+ *   E[||W - H·D*·H||_F²] / ||W||_F² ≈ 1 - 1/n   → 1 as n→∞
+ *   Energy captured by best ACDC fit ≈ 1/n → 0 (not the error; the error → 1)
  *
  * ─────────────────────────────────────────────────────────────────────────
  */
@@ -508,18 +508,14 @@ void acdc_forward_f32(float * y, const float * x, const float * d, int n) {
     memcpy(zf, x, n * sizeof(float));
     fwht_f32(zf, n);
 
-    /* Step 2: z = d ⊙ ẑ / n */
-    float inv_n = 1.0f / (float)n;
+    /* Step 2: z = d ⊙ ẑ  (unnormalized — matches acdc_forward_i8 convention) */
     for (int i = 0; i < n; i++) {
-        zf[i] *= d[i] * inv_n;
+        zf[i] *= d[i];
     }
 
-    /* Step 3: y = H · z / n */
+    /* Step 3: y = H · z  (no 1/n — d absorbs normalization at train time) */
     memcpy(y, zf, n * sizeof(float));
     fwht_f32(y, n);
-    for (int i = 0; i < n; i++) {
-        y[i] *= inv_n;
-    }
 
     free(zf);
 }

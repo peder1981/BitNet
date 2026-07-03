@@ -107,7 +107,7 @@ static void unpack_i2s_block(const uint8_t * packed, uint8_t * out, int n) {
     for (int blk = 0; blk < nb; blk++) {
         const uint8_t * src = packed + blk * (QK_WHT / 4);
         uint8_t * dst = out + blk * QK_WHT;
-        for (int col = 0; col < 32; col++) {
+        for (int col = 0; col < QK_WHT / 4; col++) {
             uint8_t byte = src[col];
             dst[col + 0*32] = (byte >> 6) & 0x03;
             dst[col + 1*32] = (byte >> 4) & 0x03;
