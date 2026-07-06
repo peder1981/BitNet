@@ -642,13 +642,13 @@ float acdc_error(const int8_t * W, const float * d, int n) {
         memset(x_buf, 0, n * sizeof(float));
         x_buf[j] = 1.0f;
 
-        /* ACDC forward: y ≈ W·eⱼ = W[:,j] */
-        memcpy(y, x_buf, n * sizeof(float));
-        fwht_f32(y, n);
-        float inv_n = 1.0f / (float)n;
-        for (int i = 0; i < n; i++) y[i] *= d[i] * inv_n;
-        fwht_f32(y, n);
-        for (int i = 0; i < n; i++) y[i] *= inv_n;
+        /* ACDC forward: y ≈ W·eⱼ = W[:,j].
+         * Reuse the SAME unnormalized kernel that runs at inference so this
+         * diagnostic can never drift from it. The old inline copy still applied
+         * a 1/n² that acdc_forward_f32 dropped — mismatching acdc_project's
+         * d* = diag(HWH)/n² by exactly n², so error read ~100% even for a
+         * perfectly ACDC-structured W (the bug the "5-fix" commit missed). */
+        acdc_forward_f32(y, x_buf, d, n);
 
         /* Compare with true column W[:,j] */
         for (int i = 0; i < n; i++) {

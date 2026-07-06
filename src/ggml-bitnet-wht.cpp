@@ -33,22 +33,23 @@
  *   This is EXACT and requires ZERO multiplications.
  *   Implementation: SIMD compare → bitmask → bitwise AND → integer add/sub.
  *
- * WHY "WHT" in the name?
+ * ON THE NAME "WHT" (misnomer — kept only for API/file stability):
  *
- *   Walsh-Hadamard connection: the decomposition W = W⁺ - W⁻ is the signed
- *   binary representation. The WHT of a ternary vector w̃ in the Hadamard
- *   basis gives the "spectrum" {Ŵ[k] = Σⱼ w̃[j]·H[j,k]} where H[j,k] ∈ {±1}.
- *   The inverse WHT recovers w̃ from its spectrum in O(n log n) — the same
- *   add/subtract butterfly structure that eliminates multiplications here.
- *   More formally: our kernel IS the WHT of x under the basis defined by W.
+ *   There is NO Walsh-Hadamard transform in this kernel. It is a signed-mask
+ *   ternary dot product: y = Σ_{w=+1} x − Σ_{w=-1} x. A true WHT is a fixed
+ *   orthogonal basis H (H[j,k]∈±1, the same for every input); here the "basis"
+ *   would be W itself, a general ternary matrix, so the WHT framing does not
+ *   apply. The name is a historical label, not a mathematical claim.
  *
- * OPERATION COUNT COMPARISON (n = 2560, one dot product):
+ * PERFORMANCE — this is NOT faster than the I2_S MAD kernel:
  *
- *   I2_S MAD:    2560 × maddubs  ≈ 2560 mul-add  (throughput: ~5 cycles each on AVX2)
- *   WHT kernel:  2560 × cmpeq + 2560 × and + 2560 × add  ≈ 2560 × 3 cycles = 7680 cycles
- *                vs MAD: 2560 × 5 = 12800 cycles → ~1.7× faster (compute-bound)
- *
- *   Memory bandwidth dominates for large n, but WHT wins on decode (cache-warm).
+ *   MAD uses one _mm256_maddubs_epi16 per 32 elements (see ggml-bitnet-mad.cpp).
+ *   This kernel spends ~10 vector ops per 32 elements (2×cmpeq + 2×and + sub +
+ *   2×cvtepi8_epi16 + add16 + madd + add32), i.e. it does MORE work per element,
+ *   not less. Its only virtue is "zero multiplications" as an existence proof;
+ *   on real AVX2 hardware maddubs wins. See utils/l2_vs_maddubs_microbench.cpp
+ *   for the measured ratio. Do NOT wire this into the decode path expecting a
+ *   speedup.
  *
  * ─────────────────────────────────────────────────────────────────────────────
  */
@@ -102,17 +103,20 @@
  *   bits 1:0 → weight at position col + 3*32
  */
 static void unpack_i2s_block(const uint8_t * packed, uint8_t * out, int n) {
-    /* x86 layout: groups of 32 interleaved within each QK block */
+    /* Scalar fallback only (no AVX2/NEON). 4 bit-planes of `grp` weights each;
+     * the stride between planes IS the group size, not a hardcoded 32 — with
+     * QK_WHT=32 (the non-SIMD build) a *32 stride wrote 3 blocks out of bounds. */
+    const int grp = QK_WHT / 4;   /* = 8 (scalar), 16 (NEON), 32 (AVX2) */
     int nb = n / QK_WHT;
     for (int blk = 0; blk < nb; blk++) {
-        const uint8_t * src = packed + blk * (QK_WHT / 4);
+        const uint8_t * src = packed + blk * grp;
         uint8_t * dst = out + blk * QK_WHT;
-        for (int col = 0; col < QK_WHT / 4; col++) {
+        for (int col = 0; col < grp; col++) {
             uint8_t byte = src[col];
-            dst[col + 0*32] = (byte >> 6) & 0x03;
-            dst[col + 1*32] = (byte >> 4) & 0x03;
-            dst[col + 2*32] = (byte >> 2) & 0x03;
-            dst[col + 3*32] = (byte >> 0) & 0x03;
+            dst[col + 0*grp] = (byte >> 6) & 0x03;
+            dst[col + 1*grp] = (byte >> 4) & 0x03;
+            dst[col + 2*grp] = (byte >> 2) & 0x03;
+            dst[col + 3*grp] = (byte >> 0) & 0x03;
         }
     }
 }

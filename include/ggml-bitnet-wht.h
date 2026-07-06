@@ -24,13 +24,13 @@ extern "C" {
  *   W = W⁺ - W⁻  where W⁺, W⁻ ∈ {0,1}^{m×n}
  *   y = W·x = W⁺·x - W⁻·x
  *
- * No _mm256_maddubs_epi16 (multiply-add). Only:
- *   _mm256_cmpeq_epi8    — bitmask extraction (0 cycles on modern μops)
- *   _mm256_and_si256     — conditional selection (1 cycle)
- *   _mm256_sub_epi8      — signed subtraction (1 cycle)
- *   _mm256_add_epi32     — accumulation (1 cycle)
- *
- * Throughput estimate: ~5× faster than maddubs path for decode (batch=1).
+ * Avoids _mm256_maddubs_epi16 (multiply-add) in favour of cmpeq + and + sub +
+ * accumulate. This is a "zero-multiplication" existence proof, NOT a speedup:
+ * it spends ~10 vector ops per 32 elements where MAD spends one maddubs, so on
+ * real AVX2 hardware the MAD kernel is faster. Measure with
+ * utils/l2_vs_maddubs_microbench.cpp before assuming otherwise.
+ * (The "WHT" name is a historical misnomer — no Walsh-Hadamard transform is
+ *  involved; see src/ggml-bitnet-wht.cpp header for the full note.)
  */
 
 /*
