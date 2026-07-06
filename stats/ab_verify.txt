@@ -1,0 +1,13 @@
+===== A1_baseline_R4C128P4 =====
+| bitnet-b1.58 2B I2_S - 2 bpw ternary |   1.71 GiB |     2.74 B | CPU        |       4 |         pp512 |          8.64 ± 0.77 |
+| bitnet-b1.58 2B I2_S - 2 bpw ternary |   1.71 GiB |     2.74 B | CPU        |       4 |          tg64 |          3.39 ± 0.14 |
+
+===== B_candidate_R8C128P4 =====
+| bitnet-b1.58 2B I2_S - 2 bpw ternary |   1.71 GiB |     2.74 B | CPU        |       4 |         pp512 |          8.93 ± 1.18 |
+| bitnet-b1.58 2B I2_S - 2 bpw ternary |   1.71 GiB |     2.74 B | CPU        |       4 |          tg64 |          3.89 ± 0.09 |
+
+===== A2_baseline_R4C128P4 =====
+| bitnet-b1.58 2B I2_S - 2 bpw ternary |   1.71 GiB |     2.74 B | CPU        |       4 |         pp512 |          7.85 ± 1.64 |
+| bitnet-b1.58 2B I2_S - 2 bpw ternary |   1.71 GiB |     2.74 B | CPU        |       4 |          tg64 |          2.38 ± 0.96 |
+
+DONE (config.h restored to git original)
