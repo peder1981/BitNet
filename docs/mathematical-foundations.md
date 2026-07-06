@@ -77,7 +77,7 @@ com √(número de parâmetros).
 
 ---
 
-## Nível 2 — Decomposição WHT: Zero Multiplicações ✓ DONE
+## Nível 2 — Decomposição de máscara ternária: Zero Multiplicações (kernel pronto, ⚠️ mais lento que L1)
 
 **Identidade algébrica** (o núcleo deste projeto):
 
@@ -106,13 +106,29 @@ __m256i delta    = _mm256_sub_epi8(pos_vals, neg_vals);  // diferença
 
 **Verificação**: max_diff = 0 (identidade inteira exata) para todas as dimensões testadas.
 
+> ⚠️ **Realidade de desempenho (medida, não estimada).** O nome "WHT" é um
+> *misnomer*: não há transformada de Walsh-Hadamard neste kernel — apenas o
+> produto ternário com máscara de sinal (`Σ_{w=+1} x − Σ_{w=-1} x`). E ele **não
+> acelera** o caminho maddubs do L1: o microbenchmark
+> `utils/l2_vs_maddubs_microbench.cpp` mede **≈3–6× mais lento** (n=2560, AVX2),
+> porque gasta ~10 ops vetoriais por 32 elementos onde `maddubs` gasta uma.
+> "Zero multiplicações" é uma prova de existência algébrica, não um ganho de CPU.
+> Não conectar ao decode esperando aceleração.
+
 → Detalhes completos: `docs/theory/02-wht-decomposition.md`
 → Implementação: `src/ggml-bitnet-wht.cpp`
 → Benchmark: `utils/wht_benchmark.py`
 
 ---
 
-## Nível 3 — Aproximação WHT Estruturada: O(n log n) GEMV ✓ DONE
+## Nível 3 — Aproximação WHT Estruturada: O(n log n) GEMV (kernel pronto, ⚠️ exige modelo treinado com ACDC)
+
+> ⚠️ **Aplicabilidade.** A butterfly FWHT é O(n log n) e correta, mas a projeção
+> ACDC de um W *pré-treinado genérico* captura apenas ~1/n da energia (erro
+> ≈99,9%, confirmado no próprio código e derivável em fechado). ACDC só recupera
+> W quando o modelo é **treinado com a arquitetura ACDC** (d aprendido). O
+> BitNet-2B shipado **não** foi — logo os ~174× não se aplicam a ele sem re-treino
+> (ver `docs/training/acdc-rect-training-spec.md`).
 
 **A ideia ACDC / Fastfood** (Le et al., 2013; Yu et al., 2016):
 
@@ -151,7 +167,14 @@ W aleatório: erro = 99.9%  (conforme teoria: ~1/n energia) ✓
 
 ---
 
-## Nível 4 — Atenção Tropical: O(n) por Token ✓ DONE
+## Nível 4 — Atenção Tropical: O(n) por Token (kernel pronto, ⚠️ não integrado)
+
+> ⚠️ **Aplicabilidade.** A esparsificação Top-K é uma aproximação lícita (porém
+> *lossy* — muda as saídas). Mas o kernel calcula os scores com um "produto
+> ternário de custo zero" que pressupõe `K ∈ {-1,0,+1}` (`tropical.cpp:236`,
+> "keys ternárias"). Numa atenção real, as keys `K = W_k·x` são **ativações
+> full-range**, não ternárias — apenas os *pesos* são ternários. Logo a premissa
+> "zero multiplicação" não vale para atenção; o ganho real vem só do Top-K.
 
 **O semiring tropical** (ℝ ∪ {-∞}, max, +):
 
@@ -199,7 +222,14 @@ Speedup teórico BitNet-2B: 2,863× na atenção ✓
 
 ---
 
-## Nível 5 — Memória Holográfica: Substituição Completa da Atenção → EM ANDAMENTO
+## Nível 5 — Memória Holográfica: Substituição Completa da Atenção → EM ANDAMENTO (⚠️ inaplicável no head_dim atual)
+
+> ⚠️ **Aplicabilidade.** A recuperação HRR exige `d ≥ 10·N` (d = head_dim, N =
+> tokens de contexto — ver `docs/theory/05-holographic-memory.md`). O BitNet-2B
+> tem head_dim=64 → capacidade ~6 tokens antes de ruído. Como substituto de
+> atenção em contexto real (milhares de tokens) é matematicamente inviável neste
+> modelo sem d≫64 ou keys fasoriais (inverso exato). Status divergente entre
+> `CLAUDE.md` ("Done") e este doc ("em andamento") — tratar como pesquisa aberta.
 
 **A álgebra mais antiga e mais esquecida**: Kanerva (1988) e Plate (1994).
 
@@ -228,16 +258,23 @@ Para contexto de n=2048 tokens: speedup ≈ n/log n ≈ 186× sobre atenção pa
 
 ## Tabela de Progresso e Budget Operacional
 
-| Nível | Math | Status | Arquivo | CPU speedup estimado |
-|-------|------|--------|---------|---------------------|
-| 0 | fp16 GEMV | — | referência | 1× |
-| 1 | Ternary {-1,0,+1} | ✓ (herdado) | `ggml-bitnet-mad.cpp` | 3–6× |
-| 2 | WHT zero-mul | **✓ DONE** | `ggml-bitnet-wht.cpp` | 1.5–2× sobre L1 |
-| 3 | FWHT + ACDC O(n log n) | **✓ DONE** | `ggml-bitnet-fwht.cpp` | ~174× FFN |
-| 4 | Tropical attention top-K | **✓ DONE** | `ggml-bitnet-tropical.cpp` | ~64–2863× attn |
-| 5 | Holographic memory HRR | **→ EM ANDAMENTO** | `ggml-bitnet-hrr.cpp` | ~186× attn |
+> **Nota de honestidade.** Nenhum dos níveis 2–5 está conectado ao caminho de
+> dispatch do `llama.cpp` — são kernels isolados na OBJECT lib `bitnet_math`. A
+> coluna abaixo distingue o *teto teórico* da *realidade medida/aplicável ao
+> modelo pré-treinado shipado*.
 
-**BitNet-2B (30 camadas) — ops/token por pipeline:**
+| Nível | Math | Status real | Arquivo | Realidade medida / aplicabilidade |
+|-------|------|-------------|---------|-----------------------------------|
+| 0 | fp16 GEMV | — | referência | 1× |
+| 1 | Ternary {-1,0,+1} | ✓ em produção | `ggml-bitnet-mad.cpp` | 3–6×; **o caminho que realmente roda** |
+| 2 | Máscara ternária ("WHT", *misnomer*) | kernel correto, **não integrado** | `ggml-bitnet-wht.cpp` | **≈3–6× MAIS LENTO** que maddubs (medido, n=2560, AVX2; `utils/l2_vs_maddubs_microbench.cpp`). Zero-mul = prova de existência, não ganho |
+| 3 | FWHT + ACDC O(n log n) | butterfly correto, **não integrado** | `ggml-bitnet-fwht.cpp` | Só num modelo **treinado com ACDC**; em W pré-treinado captura ~1/n da energia (erro ≈99,9%). Inaplicável ao BitNet-2B sem re-treino |
+| 4 | Tropical attention Top-K | **não integrado** | `ggml-bitnet-tropical.cpp` | Top-K é aproximação lícita (lossy). "Dot ternário zero-mul" exige keys ternárias — atenção real usa ativações full-range; premissa não vale |
+| 5 | Holographic memory HRR | **não integrado / pesquisa** | `ggml-bitnet-hrr.cpp` | Exige d ≥ 10·N; head_dim=64 → ~6 tokens. Inaplicável como substituto de atenção em contexto real |
+
+**BitNet-2B (30 camadas) — ops/token por pipeline** (⚠️ **projeção teórica**: assume
+todos os níveis aplicáveis e integrados — o que **não** é o caso hoje; ver coluna de
+aplicabilidade acima. L2 é mais lento que L1; L3/L5 exigem re-treino):
 
 ```
 fp16 baseline:        ~847 Gops/token

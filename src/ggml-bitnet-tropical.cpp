@@ -239,7 +239,7 @@ void tropical_attn_scores(
     float          q_scale,   /* escala de quantização da query */
     float          k_scale)   /* escala de quantização das keys */
 {
-    float scale = (q_scale * k_scale) / (float)head_dim;  /* absorve 1/√d */
+    float scale = (q_scale * k_scale) / sqrtf((float)head_dim);
 
     for (int j = 0; j < n_keys; j++) {
         int32_t raw = dot_ternary_int8(q, K + j * head_dim, head_dim);

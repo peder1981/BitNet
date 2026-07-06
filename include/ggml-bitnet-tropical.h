@@ -51,7 +51,7 @@ extern "C" {
  * tropical_attn_scores: compute all attention scores Q·K[j] / √d
  *
  * Uses ternary dot product (Level 2 kernel): zero multiplications.
- * The scale factor q_scale * k_scale / head_dim absorbs the 1/√d factor.
+ * Scale: q_scale * k_scale / √head_dim  (dequant both axes, then normalize by √d).
  *
  * @param scores    output [n_keys floats]
  * @param q         quantized query [head_dim int8]

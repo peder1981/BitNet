@@ -1,0 +1,6 @@
+config_name,act_parallel,row_block_size,col_block_size,parallel_size,pp_throughput,pp_std_dev
+ACT_ON_R4_C128_P4,True,4,128,4,5.72,0.89
+ACT_ON_R8_C128_P4,True,8,128,4,10.15,1.61
+ACT_ON_R4_C64_P4,True,4,64,4,9.84,2.01
+ACT_OFF_R32_C4_P4,False,32,4,4,7.05,1.17
+ACT_OFF_R16_C4_P4,False,16,4,4,8.3,0.27

@@ -1,6 +1,14 @@
 """
 wht_benchmark.py — Multiplication-Free Ternary GEMV Benchmark
 
+⚠️ CAVEAT: this measures NumPy/BLAS, NOT the real C kernel. The "zero-mul" path
+here (`mask @ x`) is itself a BLAS matmul *with* multiplications, so this script
+CANNOT demonstrate a zero-multiplication speedup — it only checks the algebraic
+identity. For the real AVX2 kernel vs the production maddubs path (which shows
+L2 is ~3.4× SLOWER), use utils/l2_vs_maddubs_microbench.cpp instead. Also note
+"WHT" is a misnomer: there is no Walsh-Hadamard transform, only a signed-mask
+ternary dot (see src/ggml-bitnet-wht.cpp).
+
 Validates and benchmarks the WHT (Walsh-Hadamard Ternary) decomposition
 against the standard MAD (Multiply-Add) approach for ternary matrix-vector
 products on CPU.
